@@ -1,0 +1,90 @@
+
+.INCLUDE "6502.inc"
+
+BUFFER .BLOCK 100    ; buffer for input/output
+INVENTORY .BLOCK 10   ; array to store inventory items
+
+.CODE
+
+START LDA #0           ; Load accumulator with 0
+STA INVENTORY         ; Initialize inventory array with 0
+
+; Add item to inventory
+LDA #0
+STA BUFFER
+LDA #"Enter item number: "
+JSR PRINT_STRING
+JSR READ_STRING       ; Read user input
+STA BUFFER
+LDA BUFFER
+CLC
+ADC #INVENTORY
+STA X
+
+LDA #"Enter item quantity: "
+JSR PRINT_STRING
+JSR READ_STRING
+STA BUFFER
+LDA BUFFER
+STA INVENTORY, X
+
+; Display inventory
+LDA #"Inventory:"
+JSR PRINT_STRING
+
+LDA #0
+STA X
+
+DISPLAY_LOOP
+LDA INVENTORY, X
+CMP #0
+BEQ END_DISPLAY
+JSR PRINT_INT
+INX
+BRA DISPLAY_LOOP
+
+END_DISPLAY
+BRK
+
+PRINT_INT
+TXA
+PHA
+AND #$0F
+ORA #$30
+JSR $FFD2
+PLA
+; Output space
+LDA #$20
+JSR $FFD2
+RTS
+
+PRINT_STRING
+TXA
+PHA
+TXA
+AND #$0F
+TAY
+
+PRINT_LOOP
+LDA BUFFER, Y
+BEQ END_PRINT
+JSR $FFD2
+INY
+BRA PRINT_LOOP
+
+END_PRINT
+PLA
+; Output newline
+LDA #$0D
+JSR $FFD2
+LDA #$0A
+JSR $FFD2
+RTS
+
+READ_STRING
+LDA #$02
+JSR $FFCC
+LDA BUFFER
+RTS
+
+.END
