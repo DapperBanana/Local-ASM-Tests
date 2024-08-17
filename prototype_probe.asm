@@ -1,78 +1,83 @@
 
-    .begin
+; Check if a given matrix is orthogonal
+; Assume the matrix is stored row-major in memory, with each row stored sequentially
 
-    LDX #0      ; X register for player choice
-    LDY #0      ; Y register for computer choice
+.ORG $0200  ; Start address of program
 
-  again:
-    LDA #$00    ; Prompt for user input
-    JSR $FFD2   ; Print the prompt
+MAIN:
+    LDX #$00  ; Initialize counter for rows
+LOOP_ROWS:
+    LDA #$00  ; Initialize dot product sum for current row
+    STA DOT_PRODUCT
+    
+    LDY #$00  ; Initialize counter for columns
+LOOP_COLS:
+    ; Calculate dot product of row with itself
+    LDA MATRIX, X  ; Load element Aij
+    TAY
+    
+    LDA MATRIX + 1, X  ; Load element Aik
+    JSR MUL
+    
+    LDA DOT_PRODUCT  ; Add result to dot product sum
+    CLC
+    ADC ACCUM
+    STA DOT_PRODUCT
+    
+    INY  ; Increment column counter
+    CPY #COLS  ; Check if end of row
+    BNE LOOP_COLS
+    
+    LDA DOT_PRODUCT  ; Check if dot product sum is zero
+    BEQ ROW_OK
+    
+    ; If dot product sum is not zero, matrix is not orthogonal
+    LDA #$00
+    STA RESULT
+    JMP EXIT
+    
+ROW_OK:
+    INX  ; Increment row counter
+    CPX #ROWS  ; Check if end of matrix
+    BNE LOOP_ROWS
+    
+    ; If all dot products are zero, matrix is orthogonal
     LDA #$01
-    JSR $FFD2   ; Print 'Rock (1)'
+    STA RESULT
 
-    LDA #$00    ; Prompt for user input
-    JSR $FFD2   ; Print the prompt
-    LDA #$02
-    JSR $FFD2   ; Print 'Paper (2)'
+EXIT:
+    ; End of program
+    BRK
 
-    LDA #$00    ; Prompt for user input
-    JSR $FFD2   ; Print the prompt
-    LDA #$03
-    JSR $FFD2   ; Print 'Scissors (3)'
+; Multiply accumulator with Y register and store result in ACCUM
+MUL:
+    STA TEMP
+    LDX #$00
+MUL_LOOP:
+    LDA ACCUM
+    ADC TEMP
+    DEC Y
+    BNE MUL_LOOP
+    
+    RTS
 
-    LDA #$00    ; Prompt for user input
-    JSR $FFD2   ; Print the prompt
-    LDA #$04
-    JSR $FFD2   ; Print 'Enter your choice (1-3): '
+ROWS = 3  ; Number of rows in matrix
+COLS = 3  ; Number of columns in matrix
+MATRIX:
+    .BYTE 1, 0, 0
+    .BYTE 0, 1, 0
+    .BYTE 0, 0, 1
+    
+DOT_PRODUCT:
+    .BYTE 0  ; Accumulator for dot product sum
 
-    LDA #$00    ; Get user input
-    JSR $FFD2   ; Print the prompt
-    LDA #$02
-    JSR $FFCB   ; Get user input
+ACCUM:
+    .BYTE 0  ; Temporary accumulator for multiplication
 
-    CMP #$31    ; Check if user input is valid
-    BCC again   ; Loop again if invalid
-    CMP #$34
-    BCS again
+TEMP:
+    .BYTE 0  ; Temporary storage for accumulator value
 
-    TAX         ; Store user choice in X register
+RESULT:
+    .BYTE 0  ; Result of orthogonal check
 
-    LDA #$FF    ; Get random number for computer choice
-    JSR $FFEB   ; Get random number
-    AND #$03
-    INY         ; Store random number in Y register
-
-    ; Compare user choice with computer choice
-    CMP #1
-    BEQ rock
-    CMP #2
-    BEQ paper
-    CMP #3
-    BEQ scissors
-
-rock:
-    CPY #3      ; Computer chose scissors
-    BNE you_win
-    JMP draw
-
-paper:
-    CPY #1      ; Computer chose rock
-    BNE you_win
-    JMP draw
-
-scissors:
-    CPY #2      ; Computer chose paper
-    BNE you_win
-    JMP draw
-
-you_win:
-    LDA #$00
-    JSR $FFD2   ; Print 'You win!'
-
-draw:
-    LDA #$00
-    JSR $FFD2   ; Print 'It's a draw!'
-
-    JMP again   ; Play again
-
-    .end
+.END
