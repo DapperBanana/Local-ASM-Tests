@@ -1,0 +1,87 @@
+
+PROMPT    = $FFD2
+PRINTC    = $FFD0
+GETC      = $FFCF
+CR        = $0D
+
+; Define some cards
+CARD1    .byte "Fire Dragon", 0
+CARD2    .byte "Ice Wizard", 0
+CARD3    .byte "Earth Golem", 0
+
+; Define card values
+CARD1_VAL    = $0A
+CARD2_VAL    = $0B
+CARD3_VAL    = $0C
+
+; Game logic
+START:
+    JSR PRINT_PROMPT
+    JSR PRINT_CARDS
+    JSR GET_CARD_SELECTION
+    
+    CMP #1
+    BEQ CARD1_SELECTED
+    CMP #2
+    BEQ CARD2_SELECTED
+    CMP #3
+    BEQ CARD3_SELECTED
+
+CARD1_SELECTED:
+    LDA CARD1_VAL
+    JSR PRINT_SELECTED_CARD
+    JMP END
+    
+CARD2_SELECTED:
+    LDA CARD2_VAL
+    JSR PRINT_SELECTED_CARD
+    JMP END
+    
+CARD3_SELECTED:
+    LDA CARD3_VAL
+    JSR PRINT_SELECTED_CARD
+    JMP END
+
+PRINT_PROMPT:
+    LDA #<PROMPT
+    LDY #>PROMPT
+    JSR PROMPT
+    
+    RTS
+
+PRINT_CARDS:
+    LDA #<CARD1
+    LDY #>CARD1
+    JSR PRINTC
+    JSR PRINTC
+    
+    LDA #<CARD2
+    LDY #>CARD2
+    JSR PRINTC
+    JSR PRINTC
+    
+    LDA #<CARD3
+    LDY #>CARD3
+    JSR PRINTC
+    JSR PRINTC
+    
+    RTS
+
+GET_CARD_SELECTION:
+    JSR GETC
+    CMP #CR
+    BEQ END
+    
+    RTS
+
+PRINT_SELECTED_CARD:
+    JSR PRINTC
+    JSR PRINTC
+    
+    RTS
+
+END:
+    RTS
+
+    .org $FF00
+    .word START
