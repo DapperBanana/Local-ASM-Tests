@@ -1,52 +1,35 @@
 
-; 6502 Assembly program to check if a given matrix is a magic square
+    Processor 6502
 
-START:
-    ldx #0                 ; Initialize counter to 0
-    lda MATRIX,X           ; Load element from matrix at index X
-    clc                    ; Clear carry flag
-    adc ACC,X              ; Add element to accumulator with carry
-    sta ACC,X              ; Store result back in accumulator
-    inx                    ; Increment counter
-    cpx #SIZE              ; Compare counter to size of matrix
-    bne START              ; Loop back if not at end
-    bcs IS_MAGIC_SQUARE    ; Branch if accumulator overflows
+    .org $0200
 
-NOT_MAGIC_SQUARE:         ; Matrix is not a magic square
-    lda #NOT_MAGIC_MSG     ; Load message to print
-    jsr PRINT_STRING       ; Print message
-    rts                    ; Return
+    LDA #$14      ; Load the initial number into the accumulator
+    STA number
 
-IS_MAGIC_SQUARE:          ; Matrix is a magic square
-    lda #MAGIC_MSG         ; Load message to print
-    jsr PRINT_STRING       ; Print message
-    rts                    ; Return
+loop:
+    LDX #0        ; Initialize X register to 0 for index
+    LDA number    ; Load the number into the accumulator
+    STA sum       ; Store the number in sum
 
-MATRIX:
-    .byte 2, 7, 6          ; Example matrix 3x3
-    .byte 9, 5, 1
-    .byte 4, 3, 8
+calculate_sum:
+    LSR           ; Divide the number by 10
+    BCC sum_done  ; If no carry, proceed to sum_done
+    INX           ; Increment the index
+    JMP calculate_sum
 
-SIZE = *-MATRIX
+sum_done:
+    CLC
+    ASL sum       ; Multiply sum by 2
+    ADC sum       ; Add the original sum to the result of the multiplication
+    BCC done      ; If no carry, proceed to done
+    TXA           ; Otherwise, transfer the index to accumulator
+    STA number    ; Store the index in number
+    JMP loop      ; Restart the loop
 
-MAGIC_MSG:
-    .asciiz "Matrix is a magic square\n"
+done:
+    NOP           ; Do nothing, end the program
 
-NOT_MAGIC_MSG:
-    .asciiz "Matrix is not a magic square\n"
+number: .byte 0
+sum:    .byte 0
 
-ACC:
-    .byte 0
-
-PRINT_STRING:
-    lda (PTR),Y            ; Load next character
-    beq PRINT_DONE         ; Exit if end of string
-    jsr PRINT_CHAR         ; Print character
-    iny                    ; Increment index
-    jmp PRINT_STRING       ; Loop back
-
-PRINT_DONE:
-    rts
-
-PRINT_CHAR:
-    ; Routine to print character
+    .end
