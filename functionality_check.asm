@@ -1,34 +1,89 @@
 
-.data
-data_dict: .byte 10, 20, 30, 25, 35 ; Sample data points
-chart_char: .byte '*', 0 ; Character to represent the data points
-
-.code
+        .org $0200
 start:
-    ldx #0 ; Initialize index
-loop:
-    lda data_dict, x ; Load data point
-    sec
-    sbc #20 ; Subtract offset to fit within screen
-    sta $200, x ; Store data point in screen memory
-    inx ; Increment index
-    cpx #5 ; Check if end of data
-    bne loop ; If not, repeat loop
+        LDA #0
+        STA player_score
+        LDA #0
+        STA opponent_score
+        
+        JSR display_start_message
+        
+        LDA #5
+        STA player_card
+        LDA #3
+        STA opponent_card
+        
+player_turn:
+        JSR display_player_cards
+        JSR ask_player_choice
+        
+        CMP #1
+        BEQ attack
+        CMP #2
+        BEQ defend
+        JMP invalid_choice
+        
+attack:
+        LDA player_card
+        CMP opponent_card
+        BCC win_round
+        BCS lose_round
+        
+defend:
+        LDA opponent_card
+        CMP player_card
+        BCC win_round
+        BCS lose_round
+        
+win_round:
+        INC player_score
+        JMP next_round
+        
+lose_round:
+        INC opponent_score
+        JMP next_round
+        
+next_round:
+        DEC card_count
+        BEQ end_game
+        JMP opponent_turn
+        
+opponent_turn:
+        LDA #$FF
+        STA player_card
+        LDA #8
+        STA opponent_card
+        JMP player_turn
+        
+end_game:
+        JSR display_end_message
+        RTS
+        
+display_start_message:
+        ; Display start message
+        RTS
+        
+display_player_cards:
+        ; Display player cards
+        RTS
+        
+ask_player_choice:
+        ; Ask player for choice
+        RTS
+        
+invalid_choice:
+        ; Display invalid choice message
+        RTS
+        
+display_end_message:
+        ; Display end message
+        RTS
+        
+player_card: .byte
+opponent_card: .byte
+player_score: .byte
+opponent_score: .byte
+card_count: .byte
 
-    ldx #0 ; Initialize index
-print_loop:
-    lda $200, x ; Load data point from screen memory
-    cmp #0 ; Check for end of data
-    beq end_print ; If end, exit loop
-
-    lda chart_char ; Load character to represent data point
-    sta $0400, x ; Store character in screen memory
-
-    inx ; Increment index
-    jmp print_loop ; Repeat loop
-
-end_print:
-    brk ; End program
-
-.org $0200
-.screen: .block 256 ; Define screen memory
+        .org $FFFC
+        .word start
