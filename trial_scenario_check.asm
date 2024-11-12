@@ -1,29 +1,30 @@
 
-; Assume we have a library that provides SQLite CRUD operations in 6502 Assembly
+    .org $0200
+start:
+    LDX #0              ; Set X = 0
+    LDY #0              ; Set Y = 0
 
-; Connect to the SQLite database
-LDA #connect_command
-JSR sqlite_api
+loadString:
+    LDA input,Y         ; Load character from input string
+    BEQ reverseString   ; If end of string, start reversing
+    INY                 ; Increment Y
+    BNE loadString       ; Loop until end of string
 
-; Create a new record in the database
-LDA #insert_command
-JSR sqlite_api
+reverseString:
+    DEX                 ; Decrement X
+    CPX #0              ; Check if at beginning of input string
+    BMI exit            ; If at beginning, exit
+    LDA input,X         ; Load character from end of input string
+    STA output,Y        ; Store character in output string
+    INY                 ; Increment Y
+    JMP reverseString   ; Repeat until entire string is reversed
 
-; Read data from the database
-LDA #select_command
-JSR sqlite_api
+exit:
+    BRK
 
-; Update data in the database
-LDA #update_command
-JSR sqlite_api
+input:
+    .byte "Hello, World!",0  ; Input string
+output:
+    .byte 20                ; Output string, will be filled with reversed input string characters
 
-; Delete a record from the database
-LDA #delete_command
-JSR sqlite_api
-
-; Handle errors and exceptions
-LDA #error_handling
-JSR sqlite_api
-
-; End of the program
-BRK
+    .end start
