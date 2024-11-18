@@ -1,48 +1,21 @@
 
-; 6502 Assembly program to calculate the area of a regular icosahedron
+.org $0600  ; Start program at memory address $0600
 
-    .org $1000
-    
-    LDA $01    ; load the side length of the icosahedron into the accumulator
-    STA $20    ; store the side length in memory
-    
-    LDA #$05
-    STA $21    ; store the number of faces in an icosahedron (20 faces)
-    
-    LDA $20
-    JSR SQUARE ; calculate the square of the side length
-    STA $22    ; store the square of the side length
-    
-    LDA $21
-    JSR MULT   ; multiply the number of faces by the square of the side length
-    STA $23    ; store the result
-    
-    LDA #$05
-    JSR DIVIDE ; divide the previous result by 5
-    ; at this point, the area of the icosahedron is stored in the accumulator
-    
-    HLT        ; halt
-    
-SQUARE:
-    JSR MULT   ; multiply the accumulator by itself
-    RTS        ; return
-    
-MULT:
-    PHA        ; push the accumulator onto the stack
-    LDX $00    ; load the multiplicand into X register
-LOOP:
-    CLC
-    ADC $22    ; add the multiplicand to the accumulator
-    DEX        ; decrement X
-    BNE LOOP   ; loop until X is zero
-    PLA        ; pop the original accumulator value from the stack
-    RTS        ; return
-    
-DIVIDE:
-    LDX #$00   ; clear X register
-DIV:
-    CLC
-    ADC $23    ; add the result to the accumulator
-    DEX        ; decrement X
-    BNE DIV    ; loop until X is zero
-    RTS        ; return
+LDX #0     ; Initialize X register to 0
+LDY #100   ; Load Y register with the value 100 (Celsius temperature)
+JSR ConvertToFahrenheit  ; Call the subroutine to convert Celsius to Fahrenheit
+
+ConvertToFahrenheit:
+    LDA Y       ; Load the Celsius temperature into the accumulator
+    STA TempC   ; Store the Celsius temperature in memory location TempC
+    CLC         ; Clear carry flag
+    LDA TempC   ; Load the value stored in TempC back into the accumulator
+    ASL         ; Multiply the value by 2 (Celsius * 2)
+    ADC #$20    ; Add 32 to the result (Celsius * 2 + 32)
+    STA TempF   ; Store the result in memory location TempF
+    RTS         ; Return from subroutine
+
+TempC .BYTE 0   ; Memory location to store Celsius temperature
+TempF .BYTE 0   ; Memory location to store Fahrenheit temperature
+
+.END        ; End of program
