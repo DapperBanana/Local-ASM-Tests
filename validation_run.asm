@@ -1,74 +1,99 @@
 
-; CSV Reader program
+; Set up the matrix
+        ORG     $1000
+matrix  .byte   $01, $02, $03, $04
+        .byte   $05, $06, $07, $08
+        .byte   $09, $0A, $0B, $0C
+        .byte   $0D, $0E, $0F, $10
 
-    .text
-    .globl _start
+        lda     #3       ; Number of rows
+        sta     numRows
+        lda     #4       ; Number of columns
+        sta     numCols
 
-_start:
-    ; Open the CSV file for reading
-    lda #0         ; Load the file mode for reading
-    ldx #8         ; Load the filename buffer address
-    jsr openFile   ; Call the openFile subroutine
-    
-    ; Read and print the CSV file contents
-readLoop:
-    lda #BUFFER_SIZE  ; Load the buffer size for reading
-    jsr readFile      ; Call the readFile subroutine
-    
-    lda #0          ; Load the buffer address
-    sta $D0200      ; Set the character output address
-    ldx #BUFFER_SIZE  ; Load the buffer size
-    
-printLoop:
-    lda (BUFFER_PTR), x  ; Load the character at buffer pointer + x
-    beq endOfFile       ; If the character is null, end of file reached
-    jsr $FFD2           ; Call the KERNAL routine to print the character
-    inx                ; Increment the buffer index
-    cpx #BUFFER_SIZE   ; Check if end of buffer reached
-    bne printLoop      ; If not, continue printing characters
-    bra readLoop       ; Otherwise, read more data from the file
+; Reverse the rows
+reverseRows
+        lda     #0       ; Initialize row index
+        sta     rowIndex
 
-endOfFile:
-    jsr closeFile     ; Call the closeFile subroutine
-    lda #0
-    jsr $FFD2         ; Print a newline character
-    jsr $FFD2         ; Print a newline character
-    lda #1
-    jsr $FFD2         ; Print a smiley face character
+reverseRowsLoop
+        lda     numRows
+        sec
+        sbc     rowIndex  ; Calculate the reversed row index
+        sta     reversedRowIndex
 
-    ; Exit program
-    jmp $FFCE         ; Call the KERNAL routine to exit program
+        lda     #0       ; Initialize column index
+        sta     columnIndex
 
-; Subroutine to open a file for reading
-openFile:
-    lda #15         ; Load the open file number for reading
-    sta $FC           ; Set the OPEN command number
-    ldy #<FILENAME    ; Load the low byte of the filename address
-    lda #>FILENAME    ; Load the high byte of the filename address
-    jsr $FFBA         ; Call the KERNAL routine to open the file
-    clc
-    rts
+reverseRowsLoopInner
+        lda     (matrix),y
+        sta     temp
+        lda     (matrix),x
+        sta     (matrix),y
+        lda     temp
+        sta     (matrix),x
 
-; Subroutine to read data from a file
-readFile:
-    sta $FC           ; Set the READ command number
-    lda #$00          ; Set the secondary address to 0
-    jsr $FFBA         ; Call the KERNAL routine to read data from the file
-    clc
-    rts
+        inx             ; Increment column index
+        iny
+        cmp     numCols  ; Check if reached end of row
+        bne     reverseRowsLoopInner
 
-; Subroutine to close a file
-closeFile:
-    lda #15         ; Load the open file number for closing
-    sta $FC           ; Set the CLOSE command number
-    jsr $FFBA         ; Call the KERNAL routine to close the file
-    clc
-    rts
+        lda     rowIndex   ; Increment row index
+        clc
+        adc     #1
+        sta     rowIndex
 
-; Constants
-FILENAME: .asciiz "example.csv"
-BUFFER_SIZE = 128
-BUFFER_PTR = $D000
+        cmp     numRows    ; Check if reached end of matrix
+        bne     reverseRowsLoop
 
-    .data
-    .text
+; Reverse the columns
+        lda     #3       ; Number of rows
+        sta     numRows
+        lda     #4       ; Number of columns
+        sta     numCols
+
+        lda     #0       ; Initialize column index
+        sta     columnIndex
+
+reverseColumns
+        lda     #0       ; Initialize row index
+        sta     rowIndex
+
+reverseColumnsLoop
+        lda     rowIndex
+        sec
+        sbc     numRows  ; Calculate the reversed row index
+        sta     reversedRowIndex
+
+        lda     #0       ; Initialize column index
+        sta     columnIndex
+
+reverseColumnsLoopInner
+        lda     (matrix),y
+        sta     temp
+        lda     (matrix),x
+        sta     (matrix),y
+        lda     temp
+        sta     (matrix),x
+
+        inx             ; Increment column index
+        iny
+        cmp     numCols  ; Check if reached end of row
+        bne     reverseColumnsLoopInner
+
+        lda     rowIndex   ; Increment row index
+        clc
+        adc     #1
+        sta     rowIndex
+
+        cmp     numRows    ; Check if reached end of matrix
+        bne     reverseColumnsLoop
+
+        rts             ; Return from subroutine
+
+numRows     .byte   0
+numCols     .byte   0
+rowIndex    .byte   0
+columnIndex .byte   0
+reversedRowIndex .byte 0
+temp        .byte   0
