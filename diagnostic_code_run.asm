@@ -1,59 +1,43 @@
 
-; Program to calculate the area of a regular hexadecagon
-; The program assumes that the length of each side of the hexadecagon is given
+* Set up memory locations
+BUFFER         = $0200
+INPUT_FILE     = $0300
 
-        .org $0200
+* Set up constants
+CR             = $0D      ; Carriage return
+LF             = $0A      ; Line feed
+END_OF_FILE    = $1A      ; End of file marker
 
-start:  ; Entry point of the program
+* Main program
+START          LDX #BUFFER   ; Load X register with buffer address
+              LDA #INPUT_FILE
+              STA $FC       ; Store input file address at $FC
+LOOP          JSR READ_BYTE ; Read a byte from the file
+              BEQ END_LOOP  ; If end of file, exit loop
+              STA (X)       ; Store byte in buffer
+              INX           ; Increment buffer pointer
+              JMP LOOP      ; Continue loop
+END_LOOP      STX BUFFER    ; Store buffer pointer for printing
+              JSR PRINT_BUFFER ; Print contents of buffer
+              RTS
 
-        ; Initialize variables
-        lda #16            ; Number of sides of the hexadecagon
-        sta sides
+* Subroutine to read a byte from the file
+READ_BYTE     LDA $FC       ; Load input file address
+              JSR $FFD2     ; Call Kernal routine to read byte
+              CMP #END_OF_FILE ; Compare with end of file marker
+              BEQ END_OF_FILE ; If end of file, return
+              RTS            ; Otherwise, return with byte in A
 
-        ; Get the length of each side from memory
-        lda $0300          ; Assuming the length is stored at $0300
-        sta length
+* Subroutine to print contents of buffer
+PRINT_BUFFER  LDX #BUFFER   ; Initialize buffer pointer
+PRINT_LOOP    LDA (X)       ; Load byte from buffer
+              BEQ END_PRINT ; If end of file, exit loop
+              JSR $FFD2     ; Call Kernal routine to print character
+              INX           ; Increment buffer pointer
+              JMP PRINT_LOOP ; Continue loop
+END_PRINT     RTS
 
-        ; Calculate the apothem of the hexadecagon
-        jsr calculateApothem
-
-        ; Calculate the area of the hexadecagon
-        jsr calculateArea
-
-        ; End of program
-        lda area
-        ; Store the result in memory or perform further operations
-        ; End of program
-
-; Subroutine to calculate the apothem of the hexadecagon
-calculateApothem:
-        ; Calculate the apothem using the length of each side
-        lda length
-        lsr
-        sta apothem
-        ; End of subroutine
-        rts
-
-; Subroutine to calculate the area of the hexadecagon
-calculateArea:
-        ; Calculate the area using the apothem and perimeter
-        lda apothem
-        ldx sides
-        ldy length
-        clc
-        mul
-        adc #$00
-        tax
-        lda tax
-        adc sides
-        sta area
-        ; End of subroutine
-        rts
-
-        .org $0300
-        .byte 0x04   ; Length of each side of the hexadecagon
-
-sides:  .byte 0x00   ; Number of sides of the hexadecagon
-length: .byte 0x00   ; Length of each side of the hexadecagon
-apothem: .byte 0x00  ; Apothem of the hexadecagon
-area:   .byte 0x00   ; Area of the hexadecagon
+* Data section
+              .ORG $FFD2
+              .WORD $FFFF    ; Kernal routine to read byte
+              .WORD $FFFF    ; Kernal routine to print character
