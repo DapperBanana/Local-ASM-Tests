@@ -1,48 +1,50 @@
 
-; Input: a list of numbers, terminated by a zero
-; Output: the median of the list of numbers
+        .org $0600
 
-          .org $0200
+start   ldx #radius
+        lda #2
+        jsr multiply      ; multiply radius by 2
+        tax
+        
+        lda #22
+        jsr square        ; square the result
+        tay
+        
+        lda #3
+        jsr divide        ; divide by 3
+        tay
+        
+        sta $01           ; store result in memory location $01
 
-start     ldx #0              ; Initialize index to 0
-          lda numbers,x       ; Load first number from list
-          clc
-          beq done            ; If number is zero, exit loop
-loop      inx                 ; Increment index
-          lda numbers,x       ; Load next number from list
-          beq check_median    ; If number is zero, calculate median
-          cmp numbers,x       ; Compare current number with next number
-          bcc continue        ; If next number is greater, continue
-          sta temp            ; Otherwise, swap numbers
-          sta numbers,x
-          lda temp
-          sta numbers,x
-          bcc continue
-continue  jmp loop            ; Continue looping
+        rts
 
-check_median
-          lda #0              ; Initialize median to 0
-          ldy #0              ; Initialize counter to 0
-          ldx #0              ; Initialize index to 0
-median_loop
-          lda numbers,x       ; Load number from list
-          iny                 ; Increment counter
-          inc x               ; Increment index
-          beq calculate_median ; If number is zero, calculate median
-          jmp median_loop
+radius  .byte $05
 
-calculate_median
-          lsr y               ; Divide counter by 2 to find midpoint
-          asl y
-          ldx y               ; Move midpoint to X register
-          lda numbers,x       ; Load number at midpoint
-          sta median          ; Store the median
+multiply
+        ; Multiply X with A and Save it in Y
+        tax
+        lda #0
+loop    clc
+        adc x
+        dey
+        bne loop
+        rts
 
-done      rts
+square
+        ; Square A and Save it in Y
+        tay
+        lda #0
+loop2   clc
+        adc y
+        dey
+        bne loop2
+        rts
 
-numbers   .byte 5, 3, 2, 6, 4, 0 ; List of numbers
-
-temp      .byte 0
-median    .byte 0
-
-          .end
+divide
+        ; Divide A by X and Save it in Y
+        lda #0
+loop3   sec
+        sbc x
+        dey
+        bcc loop3
+        rts
