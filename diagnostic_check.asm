@@ -1,51 +1,54 @@
 
-    .org $0800
+; 6502 Assembly program to generate a simple bar chart from a dictionary of data
 
-START:
-    LDA #$00
-    STA SUM ; initialize sum to 0
-    
-    LDX #$08 ; load file name address
-NEXT_CHAR:
-    LDA (X),Y ; load character from file name
-    BEQ OPEN_FILE ; if end of file name, open file
-    STA TEMP ; store character in temporary variable
-    INX
-    JMP NEXT_CHAR ; load next character
+    lda dictionary     ; Load address of dictionary into accumulator
+    sta ptr            ; Store address in pointer
 
-OPEN_FILE:
-    ; open file code here
+loop:
+    lda (ptr), y       ; Load data from dictionary
+    beq done           ; Exit loop if end of data is reached
 
-READ_DATA:
-    LDA $B500 ; read character from file
-    BEQ END_OF_FILE ; if end of file, exit loop
-    CMP #$30 ; compare with ASCII '0'
-    BCC SKIP_NON_NUMERIC ; if character is not numeric, skip it
-    CMP #$39 ; compare with ASCII '9'
-    BCS SKIP_NON_NUMERIC ; if character is not numeric, skip it
-    CLC
-    ADC #$D0 ; convert ASCII to decimal
-    STA TEMP ; store numeric value in temporary variable
-    LDA SUM
-    CLC
-    ADC TEMP ; add numeric value to sum
-    STA SUM ; store sum in memory
-    JMP READ_DATA ; read next character
-    
-SKIP_NON_NUMERIC:
-    JMP READ_DATA ; skip to next character
-    
-END_OF_FILE:
-    ; close file code here
-    
-    BRK ; end program
+    ; Print bar chart
+    cmp #$20           ; Check if data is space character
+    beq print_space    ; Skip printing if data is space
+    jsr print_bar      ; Print bar for data
 
-SUM:
-    .byte $00 ; sum of numbers
-TEMP:
-    .byte $00 ; temporary storage variable
+    iny                ; Increment index
+    bne loop           ; Continue looping
 
-; file name placeholder
-    .byte "DATA.TXT", $00
+done:
+    rts                ; Return from subroutine
 
-    .end
+print_bar:
+    tay                ; Transfer data to Y register
+    ldx #$00           ; Initialize counter
+
+print_loop:
+    lda #$2A           ; Load "*" character
+    jsr $FFD2          ; Call routine to print character
+
+    inx                ; Increment counter
+    cpx y              ; Compare counter with data
+    bcc print_loop     ; Continue printing if not yet done
+
+    rts                ; Return from subroutine
+
+print_space:
+    lda #$20           ; Load space character
+    jsr $FFD2          ; Call routine to print character
+
+    rts                ; Return from subroutine
+
+dictionary:
+    .byte $20, $05     ; Data to be charted
+    .byte $20, $0A
+    .byte $20, $08
+    .byte $20, $04
+    .byte $20, $06
+    .byte $00           ; End of data marker
+
+ptr:
+    .word dictionary    ; Pointer to dictionary
+
+    .org $FFD2          ; Output routine
+    rts
