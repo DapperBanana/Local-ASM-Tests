@@ -1,28 +1,45 @@
 
-        .org $1000
+LDX #0           ; Initialize index for reading the sentence
+LDA sentence,X   ; Load the first character of the sentence
+CMP #0            ; Check for end of the sentence
+BEQ end
 
-start   lda #0          ; Initialize sum to 0
-        sta sum
+init:
+   LDA #0       ; Initialize variables
+   STA wordLength
+   STA longestWordLength
+   
+loop:
+   BEQ nextWord ; If current character is space, move to next word
+   INC wordLength ; Increment word length
+   INX            ; Move to the next character
+   LDA sentence,X ; Load the next character
+   CMP #0         ; Check for end of the sentence
+   BNE loop       ; Continue processing the sentence
 
-        ldx #0          ; Initialize index to 0
+nextWord:
+   LDA wordLength        ; Load the length of the current word
+   CMP longestWordLength ; Compare with the length of the longest word found so far
+   BCC updateLongest    ; If current word is longer, update longest word length
 
-loop    lda list,x     ; Load the current element into the accumulator
-        clc            ; Clear the carry flag
-        adc sum        ; Add the current element to the sum
-        sta sum        ; Store the new sum
-        inx            ; Increment index
-        cpx #<list_end ; Check if end of list is reached
-        bne loop       ; Loop back if not reached
+updateLongest:
+   STA longestWordLength ; Update longest word length
+   LDY #0               ; Reset index for the current word
+   LDA #0               ; Reset word length
+   INX                  ; Move to the next character after the space
+   LDA sentence,X       ; Load the next character after the space
+   CMP #0               ; Check for end of the sentence
+   BEQ end              ; If end of the sentence, exit the program
+   JMP loop             ; Continue processing the next word
 
-done    lda sum        ; Load the sum into the accumulator
-        ; Store or use the sum as needed
-        ; (e.g., store it in memory location, print it, etc.)
+end:
+   ; The length of the longest word is stored in longestWordLength variable
 
-        rts            ; Return from the program
+sentence:
+   .asciiz "This is a sample sentence" ; Input sentence
 
-list    .byte $01, $02, $03, $04, $05  ; List of elements
-list_end
+wordLength:
+   .byte 0
 
-sum     .byte 0        ; Variable to store the sum
-
-        .end
+longestWordLength:
+   .byte 0
