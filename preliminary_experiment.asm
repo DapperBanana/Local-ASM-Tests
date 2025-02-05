@@ -1,44 +1,32 @@
 
-    .org $1000         ; start address of the program
+; Assumes sets A and B are stored in memory starting at addresses SET_A and SET_B
+; Outputs the union of two sets in memory starting at address UNION_SET
 
-start:
-    lda #$00           ; initialize index variable
-    sta index
+        ORG $6000      ; Start address of the program
+        
+SET_A   .BYTE $01, $02, $03, $04, $05
+SET_B   .BYTE $04, $05, $06, $07, $08
+UNION_SET .DS $0A    ; Reserve 10 bytes for the union set
 
-loop:
-    lda string, x      ; load character from string
-    beq end            ; if end of string, exit loop
-    
-    cmp #$30           ; check if character is a digit
-    bcs skip_invalid   ; if character is not a digit, skip to next character
-
-    cmp #$39           ; check if character is a digit
-    bcc invalid        ; if character is not a digit, mark as invalid
-
-    inx                ; move to next character
-    cpx #$0A           ; check if reached end of credit card number
-    bne loop           ; if not, continue loop
-
-valid:
-    lda #$01           ; set flag to indicate valid credit card number
-    jmp end
-
-invalid:
-    lda #$00           ; set flag to indicate invalid credit card number
-    jmp end
-
-skip_invalid:
-    inx                ; move to next character
-    bne loop           ; continue loop
-
-end:
-    rts
-
-string:
-    .asciiz "1234567890123456"  ; sample credit card number
-
-index:
-    .byte $00           ; index variable
-
-flag:
-    .byte $00           ; flag variable to indicate valid or invalid credit card number
+START   LDX #0         ; Initialize index for set A
+LOOP_A  LDA SET_A,X    ; Load element from set A
+        STA UNION_SET,X ; Add element to union set
+        INX            ; Increment index
+        CPX #5         ; Check if end of set A
+        BNE CONTINUE_A ; If not, continue with set A
+        JMP COPY_SET_B ; If end of set A, copy set B
+        
+CONTINUE_A
+        INX            ; Increment index
+        CPX #10        ; Check if end of union set reached
+        BNE LOOP_A     ; If not, continue with set A
+        RTS            ; Return
+        
+COPY_SET_B
+        LDX #0         ; Restart index for set B
+LOOP_B  LDA SET_B,X    ; Load element from set B
+        STA UNION_SET,X ; Add element to union set
+        INX            ; Increment index
+        CPX #10        ; Check if end of union set reached
+        BNE LOOP_B     ; If not, continue with set B
+        RTS            ; Return
