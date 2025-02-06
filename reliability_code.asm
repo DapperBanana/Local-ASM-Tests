@@ -1,30 +1,38 @@
 
-;**************************
-;* Leap Year Checker Program
-;********************* ***
+LDA $00   ; load the radius into the accumulator
+JSR CALC_AREA   ; call the subroutine to calculate the area
+STA $02   ; store the result in memory location $02
 
-    .org $0200   ;start of program memory
+JMP END   ; jump to the end of the program
 
-start:
-    LDX #0      ;initialize X register to 0
+CALC_AREA:
+  ASL   ; multiply the radius by itself to get the radius squared
+  STA $03   ; store the result in memory location $03
+  LDA $00   ; load the radius back into the accumulator
+  ASL   ; multiply the radius by 2
+  JSR MULT   ; call the subroutine to multiply
+  STA $04   ; store the result in memory location $04
+  LDA $03   ; load the radius squared back into the accumulator
+  JSR MULT   ; call the subroutine to multiply
+  LSR   ; divide by 2 to get the final result
+  RTS   ; return from the subroutine
 
-    LDA $0000   ;load input year
-    JSR check_leap_year  ;call the function to check if year is leap year
-    
-    BEQ not_leap_year   ;branch if zero flag is set (not a leap year)
-    JMP is_leap_year     ;jump if not zero (leap year)
-    
+MULT:
+  SEC   ; set carry flag for addition
+  LDX $04   ; load the second operand from memory
+LOOP:
+  BCC NOADC   ; jump if carry flag is clear
+  CLC   ; clear carry flag for subtraction
+  LDA $05   ; load the first operand from memory
+  SEC   ; set carry flag for subtraction
+  SBC $03   ; subtract the second operand from the first
+  STA $05   ; store the result back in memory
+  LDA $04   ; load the second operand back into the accumulator
+NOADC:
+  ROL   ; rotate left one bit
+  DEX   ; decrement X register
+  BNE LOOP   ; branch if not equal to zero
+  RTS   ; return from the subroutine
 
-check_leap_year:
-    ; Check if year is divisible by 4
-    CMP #4
-    BNE not_leap_year  ; if not divisible by 4, branch
-    RTS               ; Return if divisible
-    
-not_leap_year:
-    LDX #0
-    RTS
-    
-is_leap_year:
-    LDX #1
-    RTS
+END:
+  BRK   ; stop execution
