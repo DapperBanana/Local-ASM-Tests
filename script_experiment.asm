@@ -1,43 +1,19 @@
 
-START     LDA #0               ; Initialize sum of numbers
-          STA SUM
-          LDX #0               ; Initialize count of numbers
-          STX COUNT
-          
-LOOP      LDA NUMBERS,X        ; Load next number from list
-          BEQ DONE             ; Branch if end of list reached
-          CLC
-          ADC SUM              ; Add to sum
-          STA SUM
-          INX
-          INX                  ; Increment count
-          BNE LOOP
-          
-DONE      LDA COUNT            ; Load count
-          LSR                  ; Divide by 2
-          BCS ODD              ; If count is odd, branch to calculate median for odd count
-          
-EVEN      LDA SUM              ; Load sum
-          LSR                  ; Divide by 2 to get average
-          STA MEDIAN
-          RTS
+; Program to determine if a number is even or odd
+;
+; Input:  8-bit number stored in memory location $00
+; Output: $FF if number is even, $00 if number is odd
 
-ODD       LDA COUNT            ; Load count
-          ASL                  ; Multiply by 2
-          TAX                  ; Store count in X
-          LDX #0
-          
-ODD_LOOP  LDA NUMBERS,X        ; Load next number from list
-          BEQ ODD_MEDIAN       ; Branch if end of list reached
-          INX
-          INX                  ; Increment count
-          BNE ODD_LOOP
-          
-ODD_MEDIAN LDA NUMBERS,X        ; Load median
-          STA MEDIAN
-          RTS
-          
-NUMBERS   .BYTE 5,8,3,6,2      ; List of numbers
-SUM       .BYTE 0              ; Variable to store sum
-COUNT     .BYTE 0              ; Variable to store count
-MEDIAN    .BYTE 0              ; Variable to store median
+        LDA $00      ; Load the number into the accumulator
+        AND #$01     ; Mask the least significant bit to determine if it is odd or even
+        BEQ Even     ; Branch if the LSB is zero (even number)
+        JMP Odd      ; Jump if the LSB is one (odd number)
+
+Even:   LDA #$FF     ; Load $FF into the accumulator for even number
+        STA $01      ; Store the result in memory location $01
+        JMP End
+
+Odd:    LDA #$00     ; Load $00 into the accumulator for odd number
+        STA $01      ; Store the result in memory location $01
+
+End:    RTS         ; Return from subroutine and end the program
