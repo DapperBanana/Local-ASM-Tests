@@ -1,93 +1,37 @@
 
-; Check if a given string is a valid XML document with a DTD
+        .org    $0200
 
-LOAD          .equ    $1000       ; Load address of string
-STRING        .asciiz "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE test [\n<!ELEMENT test (#PCDATA)>\n]>\n<test>Hello, world!</test>"
+; Define matrices A and B
+A       .byte   1, 2, 3, 4
+B       .byte   5, 6, 7, 8
 
-; Main program
-            .org    $8000
-START       lda     #<STRING    ; Load low byte of address of string
-            sta     LOAD        ; Store low byte in LOAD address
-            lda     #>STRING    ; Load high byte of address of string
-            sta     LOAD+1      ; Store high byte in LOAD address + 1
+; Define matrix C to store the result of multiplication
+C       .byte   0, 0, 0, 0
 
-; Check if the string is a valid XML- DTD document
-            jsr     IS_VALID_XML
-            bne     NOT_VALID   ; Branch if not valid
+        lda     #$00      ; Initialize loop counter
+        sta     $FC       ; Store loop counter in memory location $FC
 
-            ; String is a valid XML document with a DTD
-            jmp     VALID
+multiply_loop:
+        ldx     #$00      ; Initialize inner loop counter
 
-NOT_VALID   ; String is not a valid XML document with a DTD
+inner_loop:
+        lda     A, x      ; Load element from matrix A
+        ldy     B, x      ; Load element from matrix B
+        clc
+        adc     C, x      ; Add to corresponding element in matrix C
+        sta     C, x      ; Store result in matrix C
 
-VALID       ; String is a valid XML document with a DTD
+        inx                ; Increment inner loop counter
+        cpx     #$02      ; Check if end of row
+        bne     inner_loop
 
-IS_VALID_XML
-            lda     #0          ; Initialize counter
-            sta     COUNT
+        lda     $FC       ; Load outer loop counter
+        clc
+        adc     #$01      ; Increment outer loop counter
+        sta     $FC       ; Store updated outer loop counter
 
-LOOP        ldx     COUNT       ; Load counter into X register
-            lda     LOAD, X     ; Load character from the string
-            beq     END_LOOP    ; Branch if end of string
+        cmp     #$02      ; Check if end of row
+        bne     multiply_loop
 
-            ; Check if the current character is part of DTD definition
-            cmp     #'<'
-            beq     DTD_START
-            cmp     #'>'
-            beq     DTD_END
-
-            ; Increment counter
-            inx
-            inx
-            inx
-            jmp     LOOP
-
-DTD_START   ; Check if DTD definition is present
-            lda     LOAD, X
-            cmp     #'!'
-            bne     NOT_VALID_XML
-            inx
-            lda     LOAD, X
-            cmp     #'D'
-            bne     NOT_VALID_XML
-            inx
-            lda     LOAD, X
-            cmp     #'O'
-            bne     NOT_VALID_XML
-            inx
-            lda     LOAD, X
-            cmp     #'C'
-            bne     NOT_VALID_XML
-            inx
-            lda     LOAD, X
-            cmp     #'T'
-            bne     NOT_VALID_XML
-
-            ; DTD definition ends with ']>'
-            inx
-            lda     LOAD, X
-            cmp     #']'
-            bne     NOT_VALID_XML
-            inx
-            lda     LOAD, X
-            cmp     #''
-            bne     NOT_VALID_XML
-            inx
-            lda     LOAD, X
-            cmp     #'>'    
-            bne     NOT_VALID_XML
-            inx
-
-DTD_END     ; Increment counter and continue
-            inx
-            jmp     LOOP
-
-NOT_VALID_XML
-            lda     #1          ; Set flag to indicate invalid XML document
-            rts
-
-END_LOOP    rts
-
-COUNT       .byte   0
-
-            .end
+done:
+        rts
