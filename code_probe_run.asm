@@ -1,119 +1,56 @@
 
-    .org $1000
-start:
-    lda #$00
-    sta count
-    ldx #$00
-    ldy #$00
+        .org $0200
 
-next_char:
-    lda input_buffer, x
-    beq end_of_string
-    cmp #'<'
-    beq start_tag
-    inx
-    jmp next_char
+start   lda #$00            ; Set up input buffer pointer
+        sta $fb
+        lda #$01
+        sta $fb+1
 
-start_tag:
-    lda input_buffer, x
-    cmp #'!'
-    bne invalid_xml
-    inx
-    lda input_buffer, x
-    cmp #'D'
-    bne invalid_xml
-    inx
-    lda input_buffer, x
-    cmp #'O'
-    bne invalid_xml
-    inx
-    lda input_buffer, x
-    cmp #'C'
-    bne invalid_xml
-    inx
-    lda input_buffer, x
-    cmp #'T'
-    bne invalid_xml
-    inx
-    lda input_buffer, x
-    cmp #'Y'
-    bne invalid_xml
-    inx
-    lda input_buffer, x
-    cmp #'P'
-    bne invalid_xml
-    inx
-    lda input_buffer, x
-    cmp #'E'
-    bne invalid_xml
+        lda #$00            ; Set up output buffer pointer
+        sta $fa
+        lda #$01
+        sta $fa+1
 
-    ; Check for closing tag
-    inx
-    lda input_buffer, x
-    cmp #'['
-    bne invalid_xml
-    inx
-    lda input_buffer, x
-    cmp #'C'
-    bne invalid_xml
-    inx
-    lda input_buffer, x
-    cmp #'L'
-    bne invalid_xml
-    inx
-    lda input_buffer, x
-    cmp #'O'
-    bne invalid_xml
-    inx
-    lda input_buffer, x
-    cmp #'S'
-    bne invalid_xml
-    inx
-    lda input_buffer, x
-    cmp #'E'
-    bne invalid_xml
-    inx
-    lda input_buffer, x
-    cmp #' '
-    bne invalid_xml
-    inx
+read_loop
+        lda $fb             ; Read a byte from input file
+        jsr read_byte
+        beq end_of_file     ; If end of file, exit
 
-    ; Check for closing tag
-    lda input_buffer, x
-    cmp #']'
-    bne invalid_xml
-    inx
-    lda input_buffer, x
-    cmp #']'
-    bne invalid_xml
-    inx
-    lda input_buffer, x
-    cmp #'>'
-    bne invalid_xml
+        cmp #','
+        beq print_newline   ; If comma, print newline
+        jsr print_byte      ; Print byte to the screen
 
-    jmp valid_xml
+        jmp read_loop       ; Continue reading
 
-invalid_xml:
-    lda #$01
-    jsr end_program
+print_newline
+        lda #$0d            ; Print newline character
+        jsr print_byte
+        lda #$0a
+        jsr print_byte
 
-valid_xml:
-    lda #$00
+        jmp read_loop       ; Continue reading
 
-end_program:
-    sta $0200
-    lda #$ff
-    ldy #$00
-    rts
+end_of_file
+        rts                 ; Exit program
 
-end_of_string:
-    lda #$00
-    jsr end_program
+read_byte
+        lda $fb             ; Read a byte from input file
+        ldx $fb+1
+        jsr $ffcf           ; OSBYTE SWI
 
-input_buffer:
-    .byte "<!DOCTYPE [CLOSE ]]>"
+        inx
+        stx $fb+1           ; Move pointer to next byte
 
-count:
-    .byte $00
+        rts
 
-    .end start
+print_byte
+        sta $fa             ; Print a byte to the screen
+        ldx $fa+1
+        jsr $ffd2           ; OSWRCH
+
+        inx
+        stx $fa+1           ; Move pointer to next byte
+
+        rts
+
+        .end
