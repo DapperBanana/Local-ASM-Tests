@@ -1,48 +1,49 @@
 
-; Program to count the number of words in a text file
+        .org $0200     ; start address of program
 
-.ORG $8000
+start   lda #10        ; base1 of trapezoid
+        sta base1
 
-START:
-    LDX #0               ; Initialize word count to 0
-    LDY #0               ; Initialize flag to check for new word
+        lda #20        ; base2 of trapezoid
+        sta base2
 
-READ_NEXT_BYTE:
-    LDA $2000,Y          ; Load next byte from text file
-    CMP #$20             ; Compare byte with space character
-    BEQ SKIP_SPACE       ; If space, skip to next byte
-    CMP #$0A             ; Compare byte with new line character
-    BEQ SKIP_SPACE       ; If new line, skip to next byte
-    CMP #$0D             ; Compare byte with carriage return character
-    BEQ SKIP_SPACE       ; If carriage return, skip to next byte
-    CMP #$00             ; Compare byte with null terminator
-    BEQ END_OF_FILE      ; If null terminator, end of file
+        lda #15        ; height of trapezoid
+        sta height
 
-    CMP #$09             ; Compare byte with tab character
-    BEQ SKIP_SPACE       ; If tab, skip to next byte
+        lda #5         ; depth of prism
+        sta depth
 
-    CMP #$21             ; Compare byte with punctuation mark
-    BMI INCREMENT        ; If punctuation mark, increment word count
+        ; Calculate area of trapezoid
+        lda base1      ; load base1
+        clc
+        adc base2      ; add base2
+        adc #2          ; add base1 + base2 + 2
+        asl
+        sta temp       ; store in temp
 
-    CPY #1               ; Check if previous byte was a space
-    BEQ INCREMENT        ; If previous byte was a space, increment word count
+        lda temp       ; load temp
+        clc
+        adc height     ; add height
+        lsr
+        adc height     ; add height
+        sta area       ; store in area
 
-    JMP INCREMENT        ; Increment word count
+        ; Calculate volume of prism
+        lda area       ; load area
+        clc
+        adc depth      ; add depth
+        asl
+        adc depth      ; add depth * 2
+        sta volume     ; store in volume
 
-SKIP_SPACE:
-    CPY #1               ; Mark that a space was encountered
-    JMP READ_NEXT_BYTE
+loop    jmp loop        ; infinite loop
 
-INCREMENT:
-    INX                  ; Increment word count
-    CPY #0               ; Reset flag
-    JMP READ_NEXT_BYTE
+base1   .byte 0
+base2   .byte 0
+height  .byte 0
+depth   .byte 0
+temp    .byte 0
+area    .byte 0
+volume  .byte 0
 
-END_OF_FILE:
-    INX                  ; Increment word count for last word
-    RTS                  ; Return from subroutine
-
-.ORG $FFFA
-    .WORD START        ; Set interrupt vectors to start of program
-    .WORD START
-    .WORD START
+        .end
