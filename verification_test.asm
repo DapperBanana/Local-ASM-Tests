@@ -1,49 +1,68 @@
 
-        ; Program to calculate the area of a rectangle given its length and width
-        
-        .org $0200      ; Set program start address
-        
-length  .byte $05      ; Define length of rectangle
-width   .byte $0A      ; Define width of rectangle
+.word_counts    .block  26       ; array to store word counts
+.buffer         .block  80       ; input string buffer
 
-area    .byte $00      ; Define variable to store area
+Start:
+    LDX #0                      ; initialize loop counter
+    LDY #0                      ; initialize word counter
+    JSR ReadString              ; read input string into buffer
 
-        lda length      ; Load length into accumulator
-        clc             ; Clear carry flag
-        adc width       ; Add width to accumulator
-        sta area        ; Store result in area variable
-        
-        lda length      ; Load length into accumulator
-        adc width       ; Add width to accumulator
-        sta area+1      ; Store carry result in higher byte of area variable
-        
-        lda area        ; Load lower byte of area into accumulator
-        ldx area+1      ; Load higher byte of area into X register
-        
-        ; Print the result
-        
-        lda $FDDA       ; Load address of print function into accumulator
-        jsr $FFD2       ; Jump to subroutine to print result
-        
-        rts             ; Return from subroutine
-        
-; Print function to display the result
+CountWords:
+    LDA buffer,X                ; get character from buffer
+    BEQ End                     ; end of string
 
-        .org $FFD2
-        
-print   lda #$0D       ; Load carriage return into accumulator
-        jsr $FFD2       ; Jump to subroutine to print carriage return
-        
-        lda #$00        ; Load X register with 0
-loop    lda area,X     ; Load character to print into accumulator
-        clc             ; Clear carry flag
-        adc #$30        ; Add offset to convert to ASCII
-        jsr $FFD2       ; Jump to subroutine to print character
-        inx             ; Increment X register
-        cpx #$02        ; Compare X register with 2
-        bne loop        ; Branch if not equal to loop
-        
-        lda #$0D       ; Load carriage return into accumulator
-        jsr $FFD2       ; Jump to subroutine to print carriage return
-        
-        rts             ; Return from subroutine
+    CMP #" "                    ; check if character is space
+    BEQ SkipSpace               ; skip spaces
+    INY                         ; increment word counter
+    STA buffer,X                ; replace space with null terminator
+
+SkipSpace:
+    INX                         ; move to next character
+    BNE CountWords              ; repeat loop
+    JMP CountWords              ; repeat loop
+
+End:
+    STY #word_counts            ; store total word count
+
+PrintCounts:
+    LDX #0                      ; initialize loop counter
+PrintLoop:
+    LDA word_counts,X           ; get count of word
+    JSR PrintDigit              ; print count
+    INX                         ; move to next word
+    CPX #26                     ; check if end of word counts array
+    BNE PrintLoop               ; repeat loop
+
+    RTS
+
+ReadString:
+    LDA #buffer                 ; load buffer pointer
+    STA $D4                     ; set the input buffer
+    LDY #80                     ; load buffer length
+    LDA #8                      ; set input routine
+    STA $D2
+    STA $D2
+    JSR $FFBD                   ; call Kernal routine to input a string
+    RTS
+
+PrintDigit:
+    CMP #$0A                    ; check if digit is newline character
+    BEQ Newline                 ; print newline
+PrintLoop:
+    CMP #$00                    ; check if end of string
+    BEQ EndPrint                ; end of string
+    SEC
+    SBC #$30                    ; convert ASCII character to decimal digit
+    JSR $FFD2                   ; call Kernal routine to output a character
+    CLC
+    INX                         ; move to next digit
+    JMP PrintDigit
+
+Newline:
+    LDA #$0D                    ; load carriage return character
+    JSR $FFD2                   ; call Kernal routine to output a character
+    LDA #$0A                    ; load line feed character
+    JMP PrintLoop
+
+EndPrint:
+    RTS
