@@ -1,39 +1,22 @@
 
-LDA #10      ; Load base of parallelogram into accumulator
-STA base
+.include "macros.s"
 
-LDA #5       ; Load height of parallelogram into accumulator
-STA height
+LDA year     ; Load the year into accumulator
+AND #$03     ; Check if year is divisible by 4
+BNE end      ; If not, jump to end
 
-LDA base
-SEC
-ADC height   ; Add base and height
-STA side1
+LDA year     ; Load the year into accumulator
+AND #$07     ; Check if year is divisible by 100
+BEQ leap     ; If yes, jump to leap
 
-LDA height
-SEC
-ADC base     ; Add height and base
-STA side2
+LDA year     ; Load the year into accumulator
+AND #$0F     ; Check if year is divisible by 400
+BNE end      ; If not, jump to end
 
-LDA side1    ; Load side1 into accumulator
-CLC
-ADC side2    ; Add side1 and side2
-LSR          ; Divide by 2 (right shift)
-STA average
+leap:
+  LDX #$01    ; Set X register to 1 (leap year)
+  JMP end
 
-LDA base
-SEC
-ADC average  ; Add base and average
-STA sum1
-
-LDA height
-SEC
-ADC average  ; Add height and average
-STA sum2
-
-LDA sum1     ; Load sum1 into accumulator
-CLC
-ADC sum2     ; Add sum1 and sum2
-STA area
-
-BRK          ; Break
+end:
+  STX isLeapYear  ; Store result in memory location isLeapYear
+  BRK            ; End the program
