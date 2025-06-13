@@ -1,158 +1,42 @@
 
-        .org $c000
+YEAR    .BYTE   2022            ; Define the year to check here
 
-mazeSize = 8
-mazeStartX = 0
-mazeStartY = 0
-mazeEndX = mazeSize-1
-mazeEndY = mazeSize-1
+        LDA     YEAR            ; Load the year into the accumulator
+        JSR     IS_LEAP_YEAR    ; Call the subroutine to check if it's a leap year
+        
+        BEQ     NOT_LEAP_YEAR   ; Branch if not a leap year
+        LDA     #1              ; Load 1 into the accumulator (leap year)
+        BRA     END_PROGRAM     ; Branch to end the program
 
-maze:
-        .byte   mazeSize,mazeSize
-        .addr   mazeData
+NOT_LEAP_YEAR:
+        LDA     #0              ; Load 0 into the accumulator (not a leap year)
 
-mazeData:
-        .fill   mazeSize*mazeSize, 0
+END_PROGRAM:
+        NOP                     ; No operation - end the program
 
-start:
-        ldx     #mazeStartX
-        ldy     #mazeStartY
-        jsr     solveMaze
+IS_LEAP_YEAR:
+        STA     TMP_YEAR        ; Store the year in a temporary memory location
+        LDA     TMP_YEAR        ; Load the year again
+        CMP     #0              ; Check if the year is divisible by 4
+        BEQ     DIV_BY_FOUR     ; If it is, check if it's divisible by 100
+        JMP     IS_NOT_LEAP     ; If not divisible by 4, it's not a leap year
 
-loop:
-        jmp     loop
+DIV_BY_FOUR:
+        LSR                     ; Divide the year by 2 to check for divisibility by 100
+        BCC     DIV_BY_HUNDRED  ; If the result is even, go to the next check
+        JMP     IS_NOT_LEAP     ; If the result is odd, it's not a leap year
 
-solveMaze:
-        lda     mazeSize
-        clc
-        adc     mazeSize
-        sta     size2
-        lda     mazeSize
-        sec
-        sbc     #$01
-        sta     size2m1
+DIV_BY_HUNDRED:
+        LSR                     ; Divide the year by 2 again to check for divisibility by 400
+        BCC     IS_LEAP         ; If the result is even, it's a leap year
+        JMP     IS_NOT_LEAP     ; If the result is odd, it's not a leap year
 
-        lda     #0
-        sta     x
-        sta     y
-        lda     #0
-        sta     stackPtr
+IS_LEAP:
+        LDA     #1              ; Load 1 into the accumulator (it's a leap year)
+        RTS                     ; Return from the subroutine
 
-pushStack:
-        lda     stackPtr
-        asl
-        tay
-        lda     x
-        sta     (stack),y
-        lda     stackPtr
-        clc
-        adc     #1
-        sta     stackPtr
-        inx
-        lda     x
-        cmp     mazeEndX
-        beq     .right
-        cmp     size2m1
-        bcc     .down
-.right:
-        lda     x
-        cmp     #0
-        beq     .left
-        lda     mazeData,y
-        cmp     #0
-        bne     .left
-        sta     mazeData,y
-        dex
-        lda     x
-        cmp     mazeEndX
-        beq     .back
-        cmp     size2m1
-        bcc     .pushStack
-.back:
-        iny
-        lda     y
-        cmp     mazeEndY
-        beq     .popStack
-.down:
-        lda     mazeData,y
-        cmp     #0
-        bne     .pushStack
-        sta     mazeData,y
-        iny
-        lda     y
-        cmp     mazeEndY
-        beq     .popStack
-.left:
-        dey
-        lda     y
-        cmp     #0
-        bne     .pushStack
-        lda     mazeData,x
-        cmp     #0
-        bne     .pushStack
-        sta     mazeData,x
-        lda     x
-        cmp     mazeEndX
-        beq     .back
-        cmp     size2m1
-        bcc     .nextCol
-        lda     y
-        cmp     #0
-        beq     .popStack
-.nextCol:
-        lda     x
-        cmp     mazeEndX
-        bne     .left
-        lda     #0
-.continue:
-        clc
-        rts
+IS_NOT_LEAP:
+        LDA     #0              ; Load 0 into the accumulator (it's not a leap year)
+        RTS                     ; Return from the subroutine
 
-popStack:
-        lda     stackPtr
-        bpl     .popLoop
-        rts
-
-.popLoop:
-        lda     stackPtr
-        sbc     #1
-        tax
-        lda     (stack),x
-        sta     y
-        lda     (stack),x
-        tax
-        lda     mazeData,x
-        and     #$fe
-        sta     mazeData,x
-        lda     (stack),x
-        clc
-        iny
-        cmp     mazeEndY
-        beq     .popLoop
-        bpl     .yNotZero
-        lda     #$f0
-        clc
-.yNotZero:
-        sta     y
-        lda     (stack),x
-        cmp     mazeEndX
-        bne     .popLoop
-        bpl     .xNotZero
-        lda     #$0f
-        clc
-.xNotZero:
-        sta     x
-        jmp     .popStack
-
-stack:
-        .byte   mazeSize*mazeSize
-stackPtr:
-        .byte   0
-x:
-        .byte   0
-y:
-        .byte   0
-size2:
-        .byte   0
-size2m1:
-        .byte   0
+TMP_YEAR    .BYTE   0              ; Temporary memory location to store the year
