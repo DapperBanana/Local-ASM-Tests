@@ -1,30 +1,32 @@
 
-    .text
+    .org $1000
+
 start:
-    ldx #0            ; Initialize index for source string
-    ldy #0            ; Initialize index for destination string
+    LDX #$00        ; Initialize index to 0
+    LDY #$00        ; Initialize index for output buffer to 0
     
-load_char:
-    lda source_string, x  ; Load the next character from source string
-    beq end_reversal   ; If null terminator is reached, branch to end_reversal
-    inx               ; Increment source string index
-    cpx #string_length   ; Check if we have reached the end of the string
-    beq end_reversal
-    jmp load_char     ; Loop back to load next character
+loop:
+    LDA input,X     ; Load next character from input buffer
+    CMP #$41        ; Compare with ascii value for 'A'
+    BCC notLetter   ; If less than 'A', skip to next character
+    CMP #$5A        ; Compare with ascii value for 'Z'
+    BCS notLetter   ; If greater than 'Z', skip to next character
+    STA output,Y   ; Store letter in output buffer
+    INY             ; Increment output buffer index
+
+notLetter:
+    INX             ; Increment input buffer index
+    LDA input,X     ; Load next character from input buffer
+    CMP #$00        ; Check if end of string
+    BEQ done        ; If end of string, we are finished
+    BNE loop        ; Else, continue processing characters
     
-copy_char:
-    dex               ; Decrement source string index
-    lda source_string, x  ; Load character from source string
-    sta dest_string, y    ; Store character in destination string
-    iny               ; Increment destination string index
-    bpl copy_char     ; Continue copying characters
-    
-end_reversal:
-    rts               ; Return
-    
-    .data
-source_string:
-    .asciiz "hello world"
-string_length = * - source_string   ; Calculate length of source string
-dest_string:
-    .ds string_length     ; Reserve space for reversed string
+done:
+    STA output,Y   ; Store null terminator in output buffer
+    RTS
+
+input:
+    .asciiz "Hello, World! This is a test."
+
+output:
+    .ds $100        ; Reserve space for output buffer
