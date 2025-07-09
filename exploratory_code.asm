@@ -1,0 +1,48 @@
+
+STACK_SIZE = 10
+
+STACK_POINTER = $FF
+STACK_BASE = $F0
+
+LDA #STACK_BASE
+STA STACK_POINTER
+
+LDX #STACK_SIZE
+
+; Push values onto the stack
+LDY #1
+LDA #5
+JSR PUSH
+
+LDY #2
+LDA #10
+JSR PUSH
+
+; Pop values from the stack
+JSR POP
+JSR POP
+
+BRK
+
+PUSH:
+    DEX
+    BEQ STACK_OVERFLOW
+    
+    TXA
+    PHA
+    TYA
+    STA (STACK_POINTER),Y
+    DEY
+    
+    RTS
+    
+STACK_OVERFLOW:
+    JMP $
+
+POP:
+    LDY #0
+    LDA (STACK_POINTER),Y
+    TYA
+    INY
+    STA STACK_POINTER
+    RTS
