@@ -1,77 +1,38 @@
 
-; Constants
-YEAR       = $00
-IS_LEAP    = $01
+.area      = $10   ; area of the regular polygon
+.side_len  = $11   ; length of one side of the polygon
+.num_sides = $12   ; number of sides of the polygon
 
-; Function to check if a year is a leap year
-CHECK_LEAP_YEAR:
-    LDA YEAR      ; Load the year into accumulator
-    STA YEAR      ; Store the year
-    LDA #$00       ; Clear IS_LEAP flag
-    STA IS_LEAP
+           .org $1000
 
-    ; Check if the year is divisible by 4
-    LDA YEAR
-    SEC
-    SBC #$04
-    AND #$03      ; Check if remainder is 0
-    BEQ DIVISIBLE_BY_4
+start      lda #10    ; load number of sides (e.g. 6)
+           sta $num_sides
 
-    ; Check if the year is divisible by 100
-    LDA YEAR
-    SEC
-    SBC #$64
-    AND #$3B      ; Check if remainder is 0
-    BEQ DIVISIBLE_BY_100
+           lda #5     ; load length of one side (e.g. 5)
+           sta $side_len
 
-    ; Check if the year is divisible by 400
-    LDA YEAR
-    SEC
-    SBC #$90
-    AND #$67      ; Check if remainder is 0
-    BEQ DIVISIBLE_BY_400
+           jsr calculate_area
 
-    BRA NOT_LEAP_YEAR
+           lda $area
+           sta $8000    ; store result at memory address $8000
 
-DIVISIBLE_BY_4:
-    LDA IS_LEAP
-    INC          ; Set IS_LEAP flag
-    BRA END
+loop       jmp loop    ; infinite loop
 
-DIVISIBLE_BY_100:
-    LDA IS_LEAP
-    BNE NOT_LEAP_YEAR
-    BRA END
+calculate_area:
+           lda $side_len  ; load length of one side
+           sta $area      ; store the area in $area
 
-DIVISIBLE_BY_400:
-    LDA IS_LEAP
-    INC          ; Set IS_LEAP flag
-    BRA END
+           lda $num_sides ; load number of sides
+           ldx $num_sides ; copy it to X register
+           lda #1
+           sec
+loop1      sbc #1       ; decrement counter
+           beq done      ; jump if counter is zero
+           clc
+           adc $area     ; add the area to itself
+           sta $area
+           jmp loop1
 
-NOT_LEAP_YEAR:
-    LDA #$00
-    STA IS_LEAP
+done       rts          ; return
 
-END:
-    RTS
-
-; Main program
-    LDA #$57      ; Load the year to check here
-    JSR CHECK_LEAP_YEAR
-
-    LDA IS_LEAP
-    BEQ NOT_LEAP
-    JMP LEAP
-
-NOT_LEAP:
-    ; Year is not a leap year
-    JMP END_PROGRAM
-
-LEAP:
-    ; Year is a leap year
-    JMP END_PROGRAM
-
-END_PROGRAM:
-    BRK
-
-    .END
+           .end
