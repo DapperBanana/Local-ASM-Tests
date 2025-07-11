@@ -1,59 +1,110 @@
 
-START:
-    LDX #0
-ROW_LOOP:
-    LDY #0
-COL_LOOP:
-    ; Check if current cell is valid
-    JSR VALIDATE_CELL
-    
-    ; Move to next column
-    INY
-    CPY #9
-    BNE COL_LOOP
-    
-    ; Move to next row
-    INX
-    CPX #9
-    BNE ROW_LOOP
-    
-    ; All cells are valid
-    JMP VALID
-    
-VALIDATE_CELL:
-    ; Calculate index in Sudoku array
-    LDA #$20           ; Offset for Sudoku array
-    CLC
-    ADC X              ; Add row index
-    TAX
-    LDA #$00
-    ADC Y              ; Add column index
-    
-    LDX #0
-CHECK_ROW:
-    LDA (SUDOKU_PTR),X   ; Load current cell value
-    BEQ NOT_VALID
-    
-    INX
-    CPX #9
-    BNE CHECK_ROW
-    
-    RTS
-    
-NOT_VALID:
-    JMP INVALID
-    
-VALID:
-    ; Print message indicating Sudoku solution is valid
-    ; Your code here
-    RTS
-    
-INVALID:
-    ; Print message indicating Sudoku solution is not valid
-    ; Your code here
-    RTS
-    
-SUDOKU_PTR .BLOCK 1      ; Pointer to the start of the Sudoku array
+    .org $0200
+    lda #0         ; Initialize sumX
+    sta sumX
+    lda #0         ; Initialize sumY
+    sta sumY
+    lda #0         ; Initialize sumXY
+    sta sumXY
+    lda #0         ; Initialize sumX2
+    sta sumX2
+    lda #0         ; Initialize n
+    sta n
 
-    .ORG $FFFC
-    .WORD START
+loop:
+    lda dataX, x  ; Load X value
+    sta tempX
+    lda dataY, x  ; Load Y value
+    sta tempY
+
+    clc
+    lda sumX
+    adc tempX
+    sta sumX       ; Add X value to sumX
+
+    lda sumY
+    adc tempY
+    sta sumY       ; Add Y value to sumY
+
+    lda tempX
+    asl            ; Multiply tempX by 2
+    tay
+    lda tempX
+    adc tempX
+    adc #0
+    sta tempX
+
+    lda sumXY
+    adc tempX
+    sta sumXY      ; Add (X*Y) to sumXY
+
+    lda sumX2
+    adc tempY
+    sta sumX2      ; Add (X*X) to sumX2
+
+    inx
+    lda n
+    clc
+    adc #1
+    sta n          ; Increment n
+
+    cpx #numPoints
+    bne loop
+
+    lda n
+    cmp #1
+    beq end        ; If n = 1, no need to calculate regression lines
+
+    lda sumX
+    cmp #0
+    beq end        ; If sumX = 0, division by 0 error
+
+    lda n
+    tay
+    lda sumX2
+    mulY
+    sta tempX      ; n * sumX2
+
+    lda sumX
+    mulY
+    sta tempY      ; sumX * sumX
+
+    lda n
+    lda n
+    sec
+    sbc tempY
+    lsr
+    sta tempY      ; n - (n*sumX^2)/(sumX*sumX)
+
+    lda tempX
+    lda tempY
+    clc
+    div
+    sta slope      ; (n * sumXY - sumX * sumY) / (n - (n * sumX^2) / (sumX * sumX))
+
+    lda sumY
+    lda slope
+    lda sumX
+    lda n
+    mulY
+    sta intercept  ; (sumY - slope * sumX) / n
+
+end:
+    rts
+
+dataX:
+    .byte 1, 2, 3, 4, 5
+dataY:
+    .byte 2, 4, 6, 8, 10
+
+numPoints = * - dataX
+sumX = $FD
+sumY = $FE
+sumXY = $FF
+sumX2 = $100
+n = $101
+
+tempX = $102
+tempY = $103
+slope = $104
+intercept = $105
