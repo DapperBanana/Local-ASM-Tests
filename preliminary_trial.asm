@@ -1,57 +1,86 @@
 
-COUNT_CHARS:
+        .org $0200
 
-    LDX #0             ; Initialize index for string
-    LDY #0             ; Initialize index for characters
-    STY INDEX          ; Store index for characters
-    STY COUNT          ; Store count for characters
+start   lda #5          ; Load radius of cone (for example, 5)
+        sta radius
 
-LOOP:
-    LDA STRING,X       ; Load the character from the string
-    BEQ END            ; Exit loop if end of string reached
-    
-    LDX #0             ; Reset index for characters
-    
-CHECK_CHARS:
-    CMP CHARACTERS,X   ; Compare the character with the characters array
-    BEQ CHAR_FOUND     ; Branch if character found
-    
-    INX                ; Increment index for characters
-    CPX #NUM_CHARS     ; Check if end of characters array reached
-    BNE CHECK_CHARS    ; Loop until all characters checked
-    
-    INY                ; Increment index for characters
-    STY INDEX          ; Store index for characters
-    LDA STRING,X       ; Load next character from string
-    JMP LOOP           ; Continue loop
-    
-CHAR_FOUND:
-    LDA COUNT,X        ; Load current count for character
-    INY                ; Increment count
-    STA COUNT,X        ; Store new count for character
-    BRA LOOP           ; Continue loop
+        lda #10         ; Load height of cone (for example, 10)
+        sta height
 
-END:
-    BRK
+        jsr calculate_volume  ; Call subroutine to calculate volume
 
-STRING:
-    .ASCII "HELLO"     ; Input string to count characters
-    .BYTE 0            ; Null terminator for end of string
-    
-CHARACTERS:
-    .ASCII "ABCDEFGHIJKLMNOPQRSTUVWXYZ"  ; Characters array to check for
+        lda volume      ; Load result into accumulator
+        jsr print_result    ; Call subroutine to print result
 
-NUM_CHARS = *-CHARACTERS
+end     rts
 
-COUNT:
-    .BYTE 0            ; Array to store count of each character
+calculate_volume
+        lda radius      ; Load radius into accumulator
+        ldx radius      ; Copy radius to X register
+        lda height      ; Load height into accumulator
+        jsr multiply        ; Call subroutine to multiply radius * radius
+        sta temp1
 
-INDEX:
-    .BYTE 0            ; Index for characters array
+        ldx #6          ; Load constant 1/3 into X register
+        lda temp1       ; Load result of radius * radius into accumulator
+        jsr divide      ; Call subroutine to divide volume by 3
+        sta volume      ; Store volume
 
-    .ORG $FFFC
-    .WORD START
+        rts
 
-START:
-    JSR COUNT_CHARS    ; Call the COUNT_CHARS subroutine
-    BRK
+multiply
+        clc
+        lda #$00        ; Clear accumulator
+        loop
+        adc temp1       ; Add temp1 to accumulator
+        dex
+        bne loop
+        rts
+
+divide
+        ldx #0
+        lda #$00
+        ldy #$00
+        loop
+        clc
+        lda volume
+        adc temp1
+        bcc no_carry
+        inx
+        asl temp1
+        jmp loop
+        no_carry
+        dey
+        jmp loop
+
+print_result
+        lda volume
+        jsr print_value
+        lda volume+1
+        jsr print_value
+        lda volume+2
+        jsr print_value
+        rts
+
+print_value
+        tax
+        and #$F0
+        lsr
+        lsr
+        lsr
+        lsr
+        ldx
+        ora #$30
+        jsr $fda2
+        lda volume
+        jsr $fda2
+        lda #$2C
+        jsr $fda2
+        rts
+
+radius  .byte 0
+height  .byte 0
+temp1   .byte 0
+volume  .byte 0
+
+        .end
