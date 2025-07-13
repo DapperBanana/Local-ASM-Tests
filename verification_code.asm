@@ -1,68 +1,93 @@
 
-; 6502 Assembly program to extract hashtags from a given text
+.org $0200
 
-START:
-    ; Initialize variables
-    LDX #0          ; Index for text
-    LDY #0          ; Index for hashtags
-    LDZ #0          ; Counter for hashtags found
-    LDA #$80        ; Start address of input text
-    STA TEXT
+;Initialize variables
+    LDA #$00        ;Clear accumulator
+    STA NUM1        ;Clear variable NUM1
+    STA NUM2        ;Clear variable NUM2
+    LDA #$0A        ;Load first number into accumulator
+    STA NUM1        ;Store first number into variable NUM1
+    LDA #$0F        ;Load second number into accumulator
+    STA NUM2        ;Store second number into variable NUM2
 
-CHECK_CHAR:
-    LDA (TEXT), X   ; Load character from text
-    CMP #0          ; Check for end of text
-    BEQ DONE        ; If end of text, exit
+;Calculate the GCD of two numbers
+    JSR GCD          ;Jump to subroutine to calculate GCD
+    STA GCD_RESULT   ;Store the result into GCD_RESULT
+    
+;Calculate the LCM of two numbers
+    LDA NUM1          ;Load NUM1 into accumulator
+    JSR DIVIDE        ;Jump to subroutine to divide by GCD
+    STA LCM            ;Store the result into LCM
+    LDA GCD_RESULT    ;Load GCD_RESULT into accumulator
+    JSR MULTIPLY      ;Jump to subroutine to multiply by NUM2
+    STA LCM            ;Store the final result into LCM
+    
+;End program
+    BRK              ;Break
 
-    CMP #' '        ; Check for space
-    BEQ INC_INDEX   ; If space, move to next character
-    CMP #'#'        ; Check for hashtag
-    BNE INC_INDEX   ; If not hashtag, move to next character
+NUM1:
+    .byte $00
 
-    INY             ; Increment index for hashtags
-    LDX #0          ; Reset index for hashtag
-    STA HASHTAGS, Y ; Store hashtag in array
+NUM2:
+    .byte $00
 
-    ; Copy the hashtag from text to hashtags array
-COPY_HASHTAG:
-    INX             ; Increment index for text
-    LDA (TEXT), X   ; Load character from text
-    CMP #' '        ; Check for space
-    BEQ SAVE_HASHTAG ; If space, save hashtag
-    STA HASHTAGS, Y ; Store character in array
-    INY             ; Increment index for hashtags
-    JMP COPY_HASHTAG
+GCD_RESULT:
+    .byte $00
 
-SAVE_HASHTAG:
-    INY             ; Increment index for hashtags
-    LDA #0          ; Null terminate hashtag
-    STA HASHTAGS, Y ; Store null terminator
+LCM:
+    .byte $00
 
-INC_INDEX:
-    INX             ; Increment index for text
-    JMP CHECK_CHAR  ; Check next character
+;Subroutine to calculate the Greatest Common Divisor (GCD) of two numbers
+GCD:
+    LDA NUM1      ;Load NUM1 into accumulator
+    CMP NUM2      ;Compare NUM1 to NUM2
+    BCC ELSE      ;Branch if NUM1 < NUM2
+    STA TEMP      ;Store NUM1 into TEMP
+    LDA NUM2      ;Load NUM2 into accumulator
+    STA NUM1      ;Store NUM2 into NUM1
+    LDA TEMP      ;Load TEMP into accumulator
+    STA NUM2      ;Store TEMP into NUM2
 
-DONE:
-    ; Print out all hashtags found
-    LDX #0          ; Reset index for hashtags
-PRINT_HASHTAGS:
-    LDA HASHTAGS, X ; Load character from hashtags array
-    CMP #0          ; Check for null terminator
-    BEQ END         ; If null terminator, exit
-    JSR PRINT_CHAR  ; Print character
-    INX             ; Increment index for hashtags
-    JMP PRINT_HASHTAGS
+ELSE:
+    LDA NUM2      ;Load NUM2 into accumulator
+    CMP #$00      ;Compare NUM2 to 0
+    BEQ ENDGCD    ;Branch if NUM2 = 0
+    LDA NUM1      ;Load NUM1 into accumulator
+    SEC           ;Set carry flag
+    SBC NUM2      ;Subtract NUM2 from accumulator
+    STA NUM1      ;Store the result back into NUM1
+    JSR GCD       ;Recursive call to GCD
 
-END:
-    BRK             ; Exit program
+ENDGCD:
+    RTS          ;Return
 
-; Print character subroutine
-PRINT_CHAR:
-    ; Output character in A
-    RTS
+;Subroutine to divide two numbers
+DIVIDE:
+    LSR            ;Shift accumulator 1 bit to the right
+    SEC            ;Set carry flag
+    SBC NUM2       ;Subtract NUM2 from accumulator
+    BCC DIVIDE_END  ;Branch if carry is clear
+    INC            ;Increment accumulator if carry is set
+DIVIDE_END:
+    ROR            ;Shift accumulator 1 bit to the left
+    RTS            ;Return
 
-; Variables
-TEXT: .BYTE "Sample text with #hashtags and #morehashtags", 0
-HASHTAGS: .BLKW 50   ; Array to store extracted hashtags
+;Subroutine to multiply two numbers
+MULTIPLY:
+    TAX            ;Transfer accumulator to X register
+    LDA NUM1       ;Load NUM1 into accumulator
+    SEC            ;Set carry flag
+    SBC #$00       ;Subtract 0 from accumulator
+    TAY            ;Transfer accumulator to Y register
+MULTIPLY_LOOP:
+    CLC            ;Clear carry flag
+    ADC NUM2       ;Add NUM2 to accumulator
+    DEY            ;Decrement Y register
+    BNE MULTIPLY_LOOP  ;Branch if Y register is not 0
+    STA LCM        ;Store the result into LCM
+    RTS            ;Return
 
-    .END
+TEMP:
+    .byte $00
+
+.END
