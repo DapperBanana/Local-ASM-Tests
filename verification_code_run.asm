@@ -1,0 +1,135 @@
+
+; Breadth-First Search Algorithm in 6502 Assembly
+; Search for shortest path in a graph represented as an adjacency matrix
+
+GRAPH_START = $2000
+QUEUE_START = $1000
+
+LDA #GRAPH_START
+STA GRAPH_PTR
+LDA #QUEUE_START
+STA QUEUE_PTR
+
+LDA #0
+STA VISITED
+STA CURR_NODE
+STA NEXT_NODE
+LDA #1
+STA DISTANCE
+STA NEXT_DISTANCE
+
+LDA CURR_NODE
+STA (QUEUE_PTR),Y ; Enqueue start node
+INY
+LDA DISTANCE
+STA (QUEUE_PTR),Y
+
+.loop:
+LDA (QUEUE_PTR) ; Dequeue node
+STA CURR_NODE
+INY
+LDA (QUEUE_PTR),Y
+STA DISTANCE
+DEY
+
+LDA CURR_NODE
+CMP #0 ; Check if all nodes are visited
+BEQ .done
+
+LDA CURR_NODE
+STA VISITED,X ; Mark current node as visited
+INX
+
+LDA DISTANCE
+STA NEXT_DISTANCE
+
+LDA #0
+STA NEXT_NODE
+
+LDA #0
+STA I
+.loop2:
+LDX #0
+.loop3:
+LDA GRAPH_PTR,X ; Load adjacency matrix row
+BEQ .no_edge
+SEC
+SBC CURR_NODE ; Check if there is an edge
+BEQ .check_visited
+.no_edge:
+INX
+INX
+INX
+INX
+CPX #32
+BNE .loop3
+INC I
+LDA GRAPH_PTR
+
+INC QUEUE_PTR
+INC QUEUE_PTR
+LDA I
+LDX #0
+.loop4:
+LDA NEXT_NODE,X
+BEQ .enqueue_next
+INX
+CPX #32
+BNE .loop4
+.next:
+LDA NEXT_NODE
+STA (QUEUE_PTR),Y
+INY
+LDA NEXT_DISTANCE
+STA (QUEUE_PTR),Y
+JMP .loop
+
+.check_visited:
+LDA VISITED,X
+BNE .loop2
+
+LDA DISTANCE
+CLC
+ADC NEXT_DISTANCE
+STA NEXT_DISTANCE
+
+LDA CURR_NODE
+STA NEXT_NODE
+
+LDA NEXT_NODE
+CMP #0
+BEQ .enqueue_next
+
+.loop5:
+INC I
+LDA GRAPH_PTR,X
+BNE .loop2
+INC I
+LDA GRAPH_PTR
+BNE .loop2
+
+.enqueue_next:
+INC I
+LDX #0
+.loop6:
+LDA NEXT_NODE,X
+BEQ .add_next
+INX
+CPX #32
+BNE .loop6
+.next2:
+LDA NEXT_NODE
+STA (QUEUE_PTR),Y
+INY
+LDA NEXT_DISTANCE
+STA (QUEUE_PTR),Y
+JMP .loop
+
+.add_next:
+INC QUEUE_PTR
+INC QUEUE_PTR
+LDA I
+BNE .loop2 
+
+.done:
+RTS
