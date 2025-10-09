@@ -1,0 +1,142 @@
+
+ORG $8000
+
+START
+    LDA #0
+    STA $C000      ; Clear screen
+    LDA #<WELCOME
+    STA ZP_TEXT
+    LDA #>WELCOME
+    STA ZP_TEXT+1
+    JSR PRINT_TEXT ; Print welcome message
+    JSR PRINT_NEWLINE
+    
+MAIN_LOOP
+    LDA #0
+    STA APPLICANT_NAME
+    LDA #0
+    STA APPLICANT_AGE
+    
+    LDA #<ENTER_NAME
+    STA ZP_TEXT
+    LDA #>ENTER_NAME
+    STA ZP_TEXT+1
+    JSR PRINT_TEXT
+    JSR READ_TEXT   ; Read applicant's name
+    
+    LDA #<ENTER_AGE
+    STA ZP_TEXT
+    LDA #>ENTER_AGE
+    STA ZP_TEXT+1
+    JSR PRINT_TEXT
+    JSR READ_NUMBER  ; Read applicant's age
+    
+    JSR PRINT_NEWLINE
+    
+    LDA #<CONFIRM_INFO
+    STA ZP_TEXT
+    LDA #>CONFIRM_INFO
+    STA ZP_TEXT+1
+    JSR PRINT_TEXT
+    
+    LDA #'Y'
+    JSR READ_CHAR
+    
+    CMP #'Y'
+    BEQ APPLICATION_SUBMITTED
+    
+    JSR PRINT_NEWLINE
+    JMP MAIN_LOOP
+
+APPLICATION_SUBMITTED
+    LDA #<THANK_YOU
+    STA ZP_TEXT
+    LDA #>THANK_YOU
+    STA ZP_TEXT+1
+    JSR PRINT_TEXT
+    
+    BRK
+
+PRINT_TEXT
+    LDA ZP_TEXT
+    PHA
+    LDA ZP_TEXT+1
+    PHA
+
+    LDX #0
+PRINT_TEXT_LOOP
+    LDA (ZP_TEXT),X
+    BEQ PRINT_TEXT_DONE
+    JSR PRINT_CHAR
+    INX
+    JMP PRINT_TEXT_LOOP
+
+PRINT_TEXT_DONE
+    PLA
+    STA $C000,X
+    PLA
+    STA $C000+1,X
+    RTS
+
+PRINT_CHAR
+    STA $C000,X
+    INX
+    RTS
+
+PRINT_NEWLINE
+    LDA #13
+    JSR PRINT_CHAR
+    LDA #10
+    JSR PRINT_CHAR
+    RTS
+
+READ_TEXT
+    LDX #0
+READ_TEXT_LOOP
+    JSR GET_CHAR
+    BEQ READ_TEXT_DONE
+    STA (ZP_TEXT),X
+    INX
+    JMP READ_TEXT_LOOP
+
+READ_TEXT_DONE
+    LDA #0
+    STA (ZP_TEXT),X
+    RTS
+
+READ_NUMBER
+    LDX #0
+READ_NUMBER_LOOP
+    JSR GET_CHAR
+    CMP #'0'
+    BCC READ_NUMBER_DONE
+    CMP #'9'
+    BCS READ_NUMBER_DONE
+    STA (APPLICANT_AGE),X
+    INX
+    JMP READ_NUMBER_LOOP
+
+READ_NUMBER_DONE
+    LDA #0
+    STA (APPLICANT_AGE),X
+    RTS
+
+READ_CHAR
+    JSR GET_CHAR
+    RTS
+
+GET_CHAR
+    LDA $C000
+    RTS
+
+ZP_TEXT     .BS 2
+APPLICANT_NAME  .BS 20
+APPLICANT_AGE   .BS 1
+
+WELCOME         .ASC "Welcome to the job application system."
+ENTER_NAME      .ASC "Enter your name: "
+ENTER_AGE       .ASC "Enter your age: "
+CONFIRM_INFO    .ASC "Is the information correct? (Y/N): "
+THANK_YOU       .ASC "Thank you for submitting your application."
+
+END
