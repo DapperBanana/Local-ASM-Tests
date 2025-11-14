@@ -1,26 +1,25 @@
 
-start:
-  lda #$00         ; initialize accumulator
-  sta $fb          ; clear memory location
-  ldx #$00         ; initialize X register
-  sty $fc          ; clear memory location
-  ldy #$00         ; initialize Y register
+    ORG $1000
+START:
+    LDX #$08        ; Initialize X register to 8 as we are converting 8-bit decimal numbers
+    LDA #Decimal    ; Load the decimal number into the accumulator
+    STA Output      ; Store the decimal number in the Output buffer
+CONVERT_LOOP:
+    ASL Output      ; Shift the bits in the Output buffer to the left
+    BCC BIT_ZERO    ; Branch if the carry flag is not set
+    ORA #1          ; Set the least significant bit to 1
+BIT_ZERO:
+    ADC Output      ; Add the original value of Output back in
+    BCC SKIP_SHIFT  ; Branch if no overflow occurred
+    SEC             ; Set the carry flag for the subtract operation
+    SBC #$0A        ; Subtract 10 to correct the decimal value
+SKIP_SHIFT:
+    DEX             ; Decrement the counter
+    BNE CONVERT_LOOP; Loop back if X is not zero
+    BRK             ; Exit the program
 
-next_row:
-  lda #$00         ; initialize accumulator for row
-  sta $fc          ; clear memory location for row
-  lda #$08         ; set column count to 8
-  sta $fd          ; store column count
-next_col:
-  lda $fb          ; load accumulator with random value
-  anda #$0f        ; mask out upper bits to get random number between 0 and 15
-  sta ($fc),y      ; store random number in crossword grid
-  iny              ; increment Y register
-  cpy $fd          ; check if end of column
-  bne next_col     ; if not, continue to next column
-  inx              ; increment X register
-  cpx #$08         ; check if end of row
-  bne next_row     ; if not, continue to next row
+Decimal: .BYTE $35     ; Decimal number to convert (53 in decimal)
 
-done:
-  rts              ; return from subroutine
+Output:  .BYTE $00     ; Output buffer to store the binary conversion
+
+    .END
