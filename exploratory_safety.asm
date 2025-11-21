@@ -1,86 +1,34 @@
 
-    .org $0200
-start
-    ; Initialize variables
-    lda #0
-    sta player_total
-    sta dealer_total
-    
-    ; Deal the cards
-    jsr deal_card_to_player
-    jsr deal_card_to_player
-    jsr deal_card_to_dealer
-    jsr deal_card_to_dealer
-    
-    ; Player's turn
-player_turn
-    jsr display_player_hand
-    jsr ask_for_hit
-    cmp #1
-    beq player_hit
-    jmp dealer_turn
-    
-player_hit
-    jsr deal_card_to_player
-    jsr display_player_hand
-    lda player_total
-    cmp #21
-    bcc player_turn
-    
-    ; Dealer's turn
-dealer_turn
-    jsr display_dealer_hand
-    
-    ; Dealer hits until total is 17 or higher
-dealer_hit_loop
-    lda dealer_total
-    cmp #17
-    bge end_game
-    
-    jsr deal_card_to_dealer
-    jsr display_dealer_hand
-    jmp dealer_hit_loop
+; Program to check if a given year is a leap year using a function
 
-end_game
-    ; Determine winner and display message 
-    lda player_total
-    cmp #21
-    bgt player_wins
-    lda dealer_total
-    cmp #21
-    bgt dealer_wins
-    lda player_total
-    cmp dealer_total
-    bgt player_wins
-    jmp dealer_wins
+        .org $0200  ; Start address of program
 
-player_wins
-    lda #0
-    sta $D0200
-    rts
+check_leap_year:
+        LDX #2      ; Load X register with the divisor (2)
+        JSR divide_by ; Call the divide_by function
+        CPX #0      ; Check if the remainder is 0
+        BEQ is_leap_year ; Branch if the remainder is 0
+        RTS         ; Return if not a leap year
 
-dealer_wins
-    lda #1
-    sta $D0200
-    rts
+is_leap_year:
+        LDX #4      ; Load X register with the divisor (4)
+        JSR divide_by ; Call the divide_by function
+        CPX #0      ; Check if the remainder is 0
+        BEQ is_not_leap_year ; Branch if the remainder is 0
+        RTS         ; Return if not a leap year
 
-deal_card_to_player
-    ; Add random card value to player's hand
-    rts
+is_not_leap_year:
+        LDA #$00    ; Load A register with 0 (negative result for leap year)
+        RTS         ; Return if not a leap year
 
-deal_card_to_dealer
-    ; Add random card value to dealer's hand
-    rts
+divide_by:
+        SEC         ; Set carry bit
+        SBC #0      ; Subtract the divisor from the accumulator
+        CPX #0      ; Check if the result is less than the divisor
+        BCS divide_by ; Branch if the result is not less than the divisor
+        JMP divide_by_done ; Jump to divide_by_done
 
-display_player_hand
-    ; Display player's hand
-    rts
+divide_by_done:
+        RTS         ; Return from the divide_by function
 
-display_dealer_hand
-    ; Display dealer's hand
-    rts
-
-ask_for_hit
-    ; Ask player if they want to hit
-    ; Return result in the accumulator
-    rts
+        .end        ; End of program
